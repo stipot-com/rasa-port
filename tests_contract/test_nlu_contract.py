@@ -12,7 +12,6 @@ FIXTURES = Path(__file__).resolve().parent / "fixtures"
 @pytest.mark.integration
 @pytest.mark.slow
 def test_tiny_project_trains_loads_and_parses(tmp_path: Path) -> None:
-    pytest.importorskip("tensorflow")
     pytest.importorskip("sklearn")
 
     from adaos_rasa_nlu import load_model, train_nlu
@@ -37,4 +36,3 @@ def test_tiny_project_trains_loads_and_parses(tmp_path: Path) -> None:
     assert parsed["intent"]["name"] in {"greet", "goodbye"}
     assert isinstance(parsed["intent"]["confidence"], float)
     assert isinstance(parsed["entities"], list)
-

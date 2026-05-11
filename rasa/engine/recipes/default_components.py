@@ -1,64 +1,47 @@
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.classifiers.fallback_classifier import FallbackClassifier
-from rasa.nlu.classifiers.keyword_intent_classifier import KeywordIntentClassifier
-from rasa.nlu.classifiers.logistic_regression_classifier import (
-    LogisticRegressionClassifier,
-)
-from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
-from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
-from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
-from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
-from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
-from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
-from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
-    LexicalSyntacticFeaturizer,
-)
-from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
-from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
-from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
-    CountVectorsFeaturizer,
-)
-from rasa.nlu.featurizers.dense_featurizer.lm_featurizer import LanguageModelFeaturizer
-from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-from rasa.nlu.selectors.response_selector import ResponseSelector
-from rasa.nlu.tokenizers.jieba_tokenizer import JiebaTokenizer
-from rasa.nlu.tokenizers.mitie_tokenizer import MitieTokenizer
-from rasa.nlu.tokenizers.spacy_tokenizer import SpacyTokenizer
-from rasa.nlu.tokenizers.whitespace_tokenizer import WhitespaceTokenizer
-from rasa.nlu.utils.mitie_utils import MitieNLP
-from rasa.nlu.utils.spacy_utils import SpacyNLP
+from __future__ import annotations
+
+from importlib import import_module
+from typing import Dict, Text
 
 
-DEFAULT_COMPONENTS = [
-    # Message Classifiers
-    DIETClassifier,
-    FallbackClassifier,
-    KeywordIntentClassifier,
-    MitieIntentClassifier,
-    SklearnIntentClassifier,
-    LogisticRegressionClassifier,
-    # Response Selectors
-    ResponseSelector,
-    # Message Entity Extractors
-    CRFEntityExtractor,
-    EntitySynonymMapper,
-    MitieEntityExtractor,
-    SpacyEntityExtractor,
-    RegexEntityExtractor,
-    # Message Feauturizers
-    LexicalSyntacticFeaturizer,
-    MitieFeaturizer,
-    SpacyFeaturizer,
-    CountVectorsFeaturizer,
-    LanguageModelFeaturizer,
-    RegexFeaturizer,
+DEFAULT_COMPONENTS: Dict[Text, Text] = {
+    # Message classifiers
+    "DIETClassifier": "rasa.nlu.classifiers.diet_classifier:DIETClassifier",
+    "FallbackClassifier": "rasa.nlu.classifiers.fallback_classifier:FallbackClassifier",
+    "KeywordIntentClassifier": "rasa.nlu.classifiers.keyword_intent_classifier:KeywordIntentClassifier",
+    "MitieIntentClassifier": "rasa.nlu.classifiers.mitie_intent_classifier:MitieIntentClassifier",
+    "SklearnIntentClassifier": "rasa.nlu.classifiers.sklearn_intent_classifier:SklearnIntentClassifier",
+    "LogisticRegressionClassifier": "rasa.nlu.classifiers.logistic_regression_classifier:LogisticRegressionClassifier",
+    # Response selectors
+    "ResponseSelector": "rasa.nlu.selectors.response_selector:ResponseSelector",
+    # Message entity extractors
+    "CRFEntityExtractor": "rasa.nlu.extractors.crf_entity_extractor:CRFEntityExtractor",
+    "EntitySynonymMapper": "rasa.nlu.extractors.entity_synonyms:EntitySynonymMapper",
+    "MitieEntityExtractor": "rasa.nlu.extractors.mitie_entity_extractor:MitieEntityExtractor",
+    "SpacyEntityExtractor": "rasa.nlu.extractors.spacy_entity_extractor:SpacyEntityExtractor",
+    "RegexEntityExtractor": "rasa.nlu.extractors.regex_entity_extractor:RegexEntityExtractor",
+    # Message featurizers
+    "LexicalSyntacticFeaturizer": "rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer:LexicalSyntacticFeaturizer",
+    "MitieFeaturizer": "rasa.nlu.featurizers.dense_featurizer.mitie_featurizer:MitieFeaturizer",
+    "SpacyFeaturizer": "rasa.nlu.featurizers.dense_featurizer.spacy_featurizer:SpacyFeaturizer",
+    "CountVectorsFeaturizer": "rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer:CountVectorsFeaturizer",
+    "LanguageModelFeaturizer": "rasa.nlu.featurizers.dense_featurizer.lm_featurizer:LanguageModelFeaturizer",
+    "RegexFeaturizer": "rasa.nlu.featurizers.sparse_featurizer.regex_featurizer:RegexFeaturizer",
     # Tokenizers
-    JiebaTokenizer,
-    MitieTokenizer,
-    SpacyTokenizer,
-    WhitespaceTokenizer,
-    # Language Model Providers
-    MitieNLP,
-    SpacyNLP,
-]
+    "JiebaTokenizer": "rasa.nlu.tokenizers.jieba_tokenizer:JiebaTokenizer",
+    "MitieTokenizer": "rasa.nlu.tokenizers.mitie_tokenizer:MitieTokenizer",
+    "SpacyTokenizer": "rasa.nlu.tokenizers.spacy_tokenizer:SpacyTokenizer",
+    "WhitespaceTokenizer": "rasa.nlu.tokenizers.whitespace_tokenizer:WhitespaceTokenizer",
+    # Language model providers
+    "MitieNLP": "rasa.nlu.utils.mitie_utils:MitieNLP",
+    "SpacyNLP": "rasa.nlu.utils.spacy_utils:SpacyNLP",
+}
+
+
+def import_default_component(name: Text) -> None:
+    """Import one default component so its recipe decorator can register it."""
+    target = DEFAULT_COMPONENTS.get(name)
+    if not target:
+        return
+    module_name, _, _class_name = target.partition(":")
+    import_module(module_name)

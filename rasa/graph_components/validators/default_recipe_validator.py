@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from typing import Iterable, List, Dict, Text, Any, Set, Type
+from typing import Iterable, List, Dict, Text, Any, Type
 
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
@@ -15,8 +15,6 @@ from rasa.nlu.extractors.crf_entity_extractor import (
 )
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturizer
-from rasa.nlu.classifiers.diet_classifier import DIETClassifier
-from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.constants import (
@@ -39,8 +37,15 @@ from rasa.shared.nlu.training_data.training_data import TrainingData
 import rasa.shared.utils.io
 
 
-# TODO: Can we replace this with the registered types from the regitry?
-TRAINABLE_EXTRACTORS = [MitieEntityExtractor, CRFEntityExtractor, DIETClassifier]
+# TODO: Can we replace this with the registered types from the registry?
+DIET_CLASSIFIER_NAME = "DIETClassifier"
+RESPONSE_SELECTOR_NAME = "ResponseSelector"
+TRAINABLE_EXTRACTOR_NAMES = {
+    MitieEntityExtractor.__name__,
+    CRFEntityExtractor.__name__,
+    DIET_CLASSIFIER_NAME,
+}
+
 
 def _types_to_str(types: Iterable[Type]) -> Text:
     """Returns a text containing the names of all given types.
@@ -51,6 +56,11 @@ def _types_to_str(types: Iterable[Type]) -> Text:
         text containing all type names
     """
     return ", ".join([type.__name__ for type in types])
+
+
+def _names_to_str(names: Iterable[Text]) -> Text:
+    """Returns a stable display string for component names."""
+    return ", ".join(sorted(names))
 
 
 def _is_policy_component(component_type: Type) -> bool:
@@ -79,6 +89,9 @@ class DefaultV1RecipeValidator(GraphComponent):
         """
         self._graph_schema = graph_schema
         self._component_types = set(node.uses for node in graph_schema.nodes.values())
+        self._component_type_names = {
+            node.uses.__name__ for node in graph_schema.nodes.values()
+        }
         self._policy_schema_nodes: List[SchemaNode] = [
             node
             for node in self._graph_schema.nodes.values()
@@ -129,40 +142,40 @@ class DefaultV1RecipeValidator(GraphComponent):
         """
         if (
             training_data.response_examples
-            and ResponseSelector not in self._component_types
+            and RESPONSE_SELECTOR_NAME not in self._component_type_names
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data with examples for training a response "
                 f"selector, but your NLU configuration does not include a response "
                 f"selector component. "
                 f"To train a model on your response selector data, add a "
-                f"'{ResponseSelector.__name__}' to your configuration.",
+                f"'{RESPONSE_SELECTOR_NAME}' to your configuration.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
-        if training_data.entity_examples and self._component_types.isdisjoint(
-            TRAINABLE_EXTRACTORS
+        if training_data.entity_examples and self._component_type_names.isdisjoint(
+            TRAINABLE_EXTRACTOR_NAMES
         ):
             rasa.shared.utils.io.raise_warning(
                 f"You have defined training data consisting of entity examples, but "
                 f"your NLU configuration does not include an entity extractor "
                 f"trained on your training data. "
                 f"To extract non-pretrained entities, add one of "
-                f"{_types_to_str(TRAINABLE_EXTRACTORS)} to your configuration.",
+                f"{_names_to_str(TRAINABLE_EXTRACTOR_NAMES)} to your configuration.",
                 docs=DOCS_URL_COMPONENTS,
             )
 
-        if training_data.entity_examples and self._component_types.isdisjoint(
-            {DIETClassifier, CRFEntityExtractor}
+        if training_data.entity_examples and self._component_type_names.isdisjoint(
+            {DIET_CLASSIFIER_NAME, CRFEntityExtractor.__name__}
         ):
             if training_data.entity_roles_groups_used():
                 rasa.shared.utils.io.raise_warning(
                     f"You have defined training data with entities that "
                     f"have roles/groups, but your NLU configuration does not "
-                    f"include a '{DIETClassifier.__name__}' "
+                    f"include a '{DIET_CLASSIFIER_NAME}' "
                     f"or a '{CRFEntityExtractor.__name__}'. "
                     f"To train entities that have roles/groups, "
-                    f"add either '{DIETClassifier.__name__}' "
+                    f"add either '{DIET_CLASSIFIER_NAME}' "
                     f"or '{CRFEntityExtractor.__name__}' to your "
                     f"configuration.",
                     docs=DOCS_URL_COMPONENTS,
@@ -198,14 +211,16 @@ class DefaultV1RecipeValidator(GraphComponent):
 
         if training_data.lookup_tables:
 
-            if self._component_types.isdisjoint([CRFEntityExtractor, DIETClassifier]):
+            if self._component_type_names.isdisjoint(
+                [CRFEntityExtractor.__name__, DIET_CLASSIFIER_NAME]
+            ):
                 rasa.shared.utils.io.raise_warning(
                     f"You have defined training data consisting of lookup tables, but "
                     f"your NLU configuration does not include any components "
                     f"that uses the features created from the lookup table. "
                     f"To make use of the features that are created with the "
                     f"help of the lookup tables, "
-                    f"add a '{DIETClassifier.__name__}' or a "
+                    f"add a '{DIET_CLASSIFIER_NAME}' or a "
                     f"'{CRFEntityExtractor.__name__}' "
                     f"with the 'pattern' feature "
                     f"to your configuration.",
@@ -289,14 +304,14 @@ class DefaultV1RecipeValidator(GraphComponent):
         Both of these look for the same entities based on the same training data
         leading to ambiguity in the results.
         """
-        extractors_in_configuration: Set[
-            Type[GraphComponent]
-        ] = self._component_types.intersection(TRAINABLE_EXTRACTORS)
+        extractors_in_configuration = self._component_type_names.intersection(
+            TRAINABLE_EXTRACTOR_NAMES
+        )
         if len(extractors_in_configuration) > 1:
             rasa.shared.utils.io.raise_warning(
                 f"You have defined multiple entity extractors that do the same job "
                 f"in your configuration: "
-                f"{_types_to_str(extractors_in_configuration)}. "
+                f"{_names_to_str(extractors_in_configuration)}. "
                 f"This can lead to the same entity getting "
                 f"extracted multiple times. Please read the documentation section "
                 f"on entity extractors to make sure you understand the implications.",
@@ -316,8 +331,8 @@ class DefaultV1RecipeValidator(GraphComponent):
         Args:
             training_data: The training data for the NLU components.
         """
-        present_general_extractors = self._component_types.intersection(
-            TRAINABLE_EXTRACTORS
+        present_general_extractors = self._component_type_names.intersection(
+            TRAINABLE_EXTRACTOR_NAMES
         )
         has_general_extractors = len(present_general_extractors) > 0
         has_regex_extractor = RegexEntityExtractor in self._component_types
@@ -331,7 +346,7 @@ class DefaultV1RecipeValidator(GraphComponent):
                 f"You have an overlap between the "
                 f"'{RegexEntityExtractor.__name__}' and the "
                 f"statistical entity extractors "
-                f"{_types_to_str(present_general_extractors)} "
+                f"{_names_to_str(present_general_extractors)} "
                 f"in your configuration. Specifically both types of extractors will "
                 f"attempt to extract entities of the types "
                 f"{', '.join(overlap_between_types)}. "

@@ -161,8 +161,9 @@ class DefaultV1Recipe(Recipe):
 
     @classmethod
     def _from_registry(cls, name: Text) -> RegisteredComponent:
-        # Importing all the default Rasa components will automatically register them
-        from rasa.engine.recipes.default_components import DEFAULT_COMPONENTS  # noqa
+        from rasa.engine.recipes.default_components import import_default_component
+
+        import_default_component(name)
 
         if name in cls._registered_components:
             return cls._registered_components[name]

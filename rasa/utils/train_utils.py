@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from pathlib import Path
 import numpy as np
 from typing import Optional, Text, Dict, Any, Union, List, Tuple, TYPE_CHECKING
@@ -28,15 +30,14 @@ from rasa.utils.tensorflow.constants import (
     TOLERANCE,
     CHECKPOINT_MODEL,
 )
-from rasa.utils.tensorflow.callback import RasaTrainingLogger, RasaModelCheckpoint
-from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
-from rasa.utils.tensorflow.model_data import RasaModelData
 from rasa.shared.nlu.constants import SPLIT_ENTITIES_BY_COMMA
 from rasa.shared.exceptions import InvalidConfigException
 
 if TYPE_CHECKING:
     from rasa.nlu.extractors.extractor import EntityTagSpec
     from rasa.nlu.tokenizers.tokenizer import Token
+    from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
+    from rasa.utils.tensorflow.model_data import RasaModelData
     from tensorflow.keras.callbacks import Callback
 
 
@@ -320,6 +321,8 @@ def create_data_generators(
     Returns:
         The training data generator and optional validation data generator.
     """
+    from rasa.utils.tensorflow.data_generator import RasaBatchDataGenerator
+
     validation_data_generator = None
     if eval_num_examples > 0:
         model_data, evaluation_model_data = model_data.split(
@@ -370,6 +373,7 @@ def create_common_callbacks(
         A list of callbacks.
     """
     import tensorflow as tf
+    from rasa.utils.tensorflow.callback import RasaModelCheckpoint, RasaTrainingLogger
 
     callbacks = [RasaTrainingLogger(epochs, silent=False)]
 

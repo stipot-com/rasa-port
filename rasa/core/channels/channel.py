@@ -1,9 +1,8 @@
+from __future__ import annotations
+
 import json
 import logging
 import uuid
-import jwt
-from sanic import Sanic, Blueprint
-from sanic.request import Request
 from typing import (
     Text,
     List,
@@ -14,6 +13,7 @@ from typing import (
     Iterable,
     Awaitable,
     NoReturn,
+    TYPE_CHECKING,
 )
 
 from rasa.cli import utils as cli_utils
@@ -27,6 +27,10 @@ except ImportError:
     from urllib.parse import urljoin
 
 logger = logging.getLogger(__name__)
+
+if TYPE_CHECKING:
+    from sanic import Blueprint, Sanic
+    from sanic.request import Request
 
 
 class UserMessage:
@@ -176,6 +180,8 @@ def decode_jwt(bearer_token: Text, jwt_key: Text, jwt_algorithm: Text) -> Dict:
         if unsuccessful
     """
     authorization_header_value = bearer_token.replace(BEARER_TOKEN_PREFIX, "")
+    import jwt
+
     return jwt.decode(authorization_header_value, jwt_key, algorithms=jwt_algorithm)
 
 
@@ -195,10 +201,16 @@ def decode_bearer_token(
     # noinspection PyBroadException
     try:
         return decode_jwt(bearer_token, jwt_key, jwt_algorithm)
-    except jwt.exceptions.InvalidSignatureError:
-        logger.error("JWT public key invalid.")
-    except Exception:
-        logger.exception("Failed to decode bearer token.")
+    except Exception as exc:
+        try:
+            import jwt
+
+            if isinstance(exc, jwt.exceptions.InvalidSignatureError):
+                logger.error("JWT public key invalid.")
+            else:
+                logger.exception("Failed to decode bearer token.")
+        except Exception:
+            logger.exception("Failed to decode bearer token.")
 
     return None
 

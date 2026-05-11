@@ -1,6 +1,6 @@
 from __future__ import annotations
 from collections import defaultdict
-from typing import Iterable, List, Dict, Text, Any, Set, Type, cast
+from typing import Iterable, List, Dict, Text, Any, Set, Type
 
 from rasa.core.featurizers.precomputation import CoreFeaturizationInputConverter
 from rasa.engine.graph import ExecutionContext, GraphComponent, GraphSchema, SchemaNode
@@ -18,11 +18,6 @@ from rasa.nlu.featurizers.sparse_featurizer.regex_featurizer import RegexFeaturi
 from rasa.nlu.classifiers.diet_classifier import DIETClassifier
 from rasa.nlu.selectors.response_selector import ResponseSelector
 from rasa.nlu.tokenizers.tokenizer import Tokenizer
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.policy import Policy, SupportedData
-from rasa.core.policies.memoization import MemoizationPolicy
-from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.constants import POLICY_PRIORITY
 from rasa.shared.core.training_data.structures import RuleStep, StoryGraph
 from rasa.shared.constants import (
     DEFAULT_CONFIG_PATH,
@@ -46,9 +41,6 @@ import rasa.shared.utils.io
 
 # TODO: Can we replace this with the registered types from the regitry?
 TRAINABLE_EXTRACTORS = [MitieEntityExtractor, CRFEntityExtractor, DIETClassifier]
-# TODO: replace these once the Recipe is merged (used in tests)
-POLICY_CLASSSES = {TEDPolicy, MemoizationPolicy, RulePolicy}
-
 
 def _types_to_str(types: Iterable[Type]) -> Text:
     """Returns a text containing the names of all given types.
@@ -59,6 +51,10 @@ def _types_to_str(types: Iterable[Type]) -> Text:
         text containing all type names
     """
     return ", ".join([type.__name__ for type in types])
+
+
+def _is_policy_component(component_type: Type) -> bool:
+    return component_type.__module__.startswith("rasa.core.policies")
 
 
 class DefaultV1RecipeValidator(GraphComponent):
@@ -86,7 +82,7 @@ class DefaultV1RecipeValidator(GraphComponent):
         self._policy_schema_nodes: List[SchemaNode] = [
             node
             for node in self._graph_schema.nodes.values()
-            if issubclass(node.uses, Policy)
+            if _is_policy_component(node.uses)
         ]
 
     def validate(self, importer: TrainingDataImporter) -> TrainingDataImporter:
@@ -390,6 +386,8 @@ class DefaultV1RecipeValidator(GraphComponent):
 
     def _warn_if_no_rule_policy_is_contained(self) -> None:
         """Warns if there is no rule policy among the given policies."""
+        from rasa.core.policies.rule_policy import RulePolicy
+
         if not any(node.uses == RulePolicy for node in self._policy_schema_nodes):
             rasa.shared.utils.io.raise_warning(
                 f"'{RulePolicy.__name__}' is not included in the model's "
@@ -408,6 +406,8 @@ class DefaultV1RecipeValidator(GraphComponent):
         Raises:
             `InvalidConfigException` if domain and rule policies do not match
         """
+        from rasa.core.policies.rule_policy import RulePolicy
+
         contains_rule_policy = any(
             schema_node
             for schema_node in self._graph_schema.nodes.values()
@@ -430,6 +430,8 @@ class DefaultV1RecipeValidator(GraphComponent):
         Raises:
             `InvalidDomain` if domain and rule policies do not match
         """
+        from rasa.core.policies.rule_policy import RulePolicy
+
         for schema_node in self._graph_schema.nodes.values():
             if schema_node.uses == RulePolicy:
                 RulePolicy.raise_if_incompatible_with_domain(
@@ -445,6 +447,8 @@ class DefaultV1RecipeValidator(GraphComponent):
         Raises:
             `InvalidConfigException` if any of the policies doesn't have a priority
         """
+        from rasa.core.constants import POLICY_PRIORITY
+
         priority_dict = defaultdict(list)
         for schema_node in self._policy_schema_nodes:
             default_config = schema_node.uses.get_default_config()
@@ -476,8 +480,11 @@ class DefaultV1RecipeValidator(GraphComponent):
         Args:
             story_graph: a story graph (core training data)
         """
+        from rasa.core.policies.policy import SupportedData
+        from rasa.core.policies.rule_policy import RulePolicy
+
         consuming_rule_data = any(
-            cast(Policy, policy_node.uses).supported_data()
+            policy_node.uses.supported_data()
             in [SupportedData.RULE_DATA, SupportedData.ML_AND_RULE_DATA]
             for policy_node in self._policy_schema_nodes
         )

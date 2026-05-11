@@ -227,7 +227,8 @@ def validate_files(
     """
     rasa.shared.utils.cli.print_error_and_exit(
         "Project validation is not included in the AdaOS Rasa NLU slice. "
-        "Run NLU training directly or restore validator.py from rasa-backup."
+        "Run NLU training directly or restore upstream validation only if it "
+        "becomes part of the porting contract."
     )
 
 

@@ -3,9 +3,9 @@
 This repository intentionally keeps a trimmed Rasa 3.6.x source subset for AdaOS
 NLU porting work.
 
-The slice is no longer treated as a temporary folder next to `rasa-backup`. It is
-now the controlled source tree for the AdaOS Rasa NLU port. Deleted or omitted
-upstream files should only be restored when they are needed by the contract in
+The slice is no longer treated as a temporary staging folder. It is now the
+controlled source tree for the AdaOS Rasa NLU port. Deleted or omitted upstream
+files should only be restored when they are needed by the contract in
 `PORTING_CONTRACT.md`.
 
 ## Kept Runtime Areas

@@ -7,7 +7,6 @@ from rasa.nlu.classifiers.logistic_regression_classifier import (
 from rasa.nlu.classifiers.mitie_intent_classifier import MitieIntentClassifier
 from rasa.nlu.classifiers.sklearn_intent_classifier import SklearnIntentClassifier
 from rasa.nlu.extractors.crf_entity_extractor import CRFEntityExtractor
-from rasa.nlu.extractors.duckling_entity_extractor import DucklingEntityExtractor
 from rasa.nlu.extractors.entity_synonyms import EntitySynonymMapper
 from rasa.nlu.extractors.mitie_entity_extractor import MitieEntityExtractor
 from rasa.nlu.extractors.spacy_entity_extractor import SpacyEntityExtractor
@@ -15,7 +14,6 @@ from rasa.nlu.extractors.regex_entity_extractor import RegexEntityExtractor
 from rasa.nlu.featurizers.sparse_featurizer.lexical_syntactic_featurizer import (
     LexicalSyntacticFeaturizer,
 )
-from rasa.nlu.featurizers.dense_featurizer.convert_featurizer import ConveRTFeaturizer
 from rasa.nlu.featurizers.dense_featurizer.mitie_featurizer import MitieFeaturizer
 from rasa.nlu.featurizers.dense_featurizer.spacy_featurizer import SpacyFeaturizer
 from rasa.nlu.featurizers.sparse_featurizer.count_vectors_featurizer import (
@@ -32,11 +30,6 @@ from rasa.nlu.utils.mitie_utils import MitieNLP
 from rasa.nlu.utils.spacy_utils import SpacyNLP
 
 
-from rasa.core.policies.ted_policy import TEDPolicy
-from rasa.core.policies.memoization import MemoizationPolicy, AugmentedMemoizationPolicy
-from rasa.core.policies.rule_policy import RulePolicy
-from rasa.core.policies.unexpected_intent_policy import UnexpecTEDIntentPolicy
-
 DEFAULT_COMPONENTS = [
     # Message Classifiers
     DIETClassifier,
@@ -49,14 +42,12 @@ DEFAULT_COMPONENTS = [
     ResponseSelector,
     # Message Entity Extractors
     CRFEntityExtractor,
-    DucklingEntityExtractor,
     EntitySynonymMapper,
     MitieEntityExtractor,
     SpacyEntityExtractor,
     RegexEntityExtractor,
     # Message Feauturizers
     LexicalSyntacticFeaturizer,
-    ConveRTFeaturizer,
     MitieFeaturizer,
     SpacyFeaturizer,
     CountVectorsFeaturizer,
@@ -70,10 +61,4 @@ DEFAULT_COMPONENTS = [
     # Language Model Providers
     MitieNLP,
     SpacyNLP,
-    # Dialogue Management Policies
-    TEDPolicy,
-    UnexpecTEDIntentPolicy,
-    RulePolicy,
-    MemoizationPolicy,
-    AugmentedMemoizationPolicy,
 ]

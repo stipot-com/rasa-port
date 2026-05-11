@@ -17,9 +17,9 @@ from rasa.engine.storage.resource import Resource
 from rasa.engine.storage.storage import ModelStorage
 from rasa.nlu.constants import TOKENS_NAMES
 from rasa.nlu.extractors.extractor import EntityExtractorMixin
-from rasa.nlu.test import determine_token_labels
 from rasa.nlu.tokenizers.spacy_tokenizer import POS_TAG_KEY
 from rasa.nlu.tokenizers.tokenizer import Token, Tokenizer
+from rasa.nlu.utils.token_label_utils import determine_token_labels
 from rasa.shared.constants import DOCS_URL_COMPONENTS
 from rasa.shared.nlu.constants import (
     TEXT,
